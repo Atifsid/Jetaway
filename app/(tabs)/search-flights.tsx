@@ -1,7 +1,9 @@
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Ionicons, MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import axios from "axios";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
     Platform,
     StyleSheet,
@@ -9,7 +11,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
-import InputField from "../../components/ui/InputField";
+import DropdownSearch from "../../components/ui/DropdownSearch";
 import PrimaryButton from "../../components/ui/PrimaryButton";
 
 const TRIP_TYPES = [
@@ -24,20 +26,83 @@ function formatDate(date: Date | null) {
 
 export default function SearchFlightsScreen() {
     const [tripType, setTripType] = useState("oneway");
-    const [origin, setOrigin] = useState("");
-    const [destination, setDestination] = useState("");
+    const [origin, setOrigin] = useState<any>(null);
+    const [destination, setDestination] = useState<any>(null);
     const [departure, setDeparture] = useState<Date | null>(null);
     const [returnDate, setReturnDate] = useState<Date | null>(null);
     const [showDeparturePicker, setShowDeparturePicker] = useState(false);
     const [showReturnPicker, setShowReturnPicker] = useState(false);
+    const [originQuery, setOriginQuery] = useState("");
+    const [originResults, setOriginResults] = useState<any[]>([]);
+    const [originLoading, setOriginLoading] = useState(false);
+    const [destinationQuery, setDestinationQuery] = useState("");
+    const [destinationResults, setDestinationResults] = useState<any[]>([]);
+    const [destinationLoading, setDestinationLoading] = useState(false);
     const router = useRouter();
+
+    const debouncedOriginQuery = useDebouncedValue(originQuery, 500);
+    const debouncedDestinationQuery = useDebouncedValue(destinationQuery, 500);
+
+    const fetchAirportData = useCallback(async (query: string) => {
+        if (!query) return [];
+        try {
+            const response = await axios.request({
+                method: "GET",
+                url: `${process.env.EXPO_PUBLIC_SKY_SCRAPPER_BASE_URL}/flights/searchAirport`,
+                params: {
+                    query,
+                    locale: "en-US",
+                },
+                headers: {
+                    "x-rapidapi-key": process.env.EXPO_PUBLIC_RAPID_API_KEY,
+                    "x-rapidapi-host":
+                        process.env.EXPO_PUBLIC_SKY_SCRAPPER_HOST,
+                },
+            });
+            console.log("response.data?.data", JSON.stringify(response.data));
+
+            return Array.isArray(response.data?.data) ? response.data.data : [];
+        } catch (error) {
+            return [];
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!debouncedOriginQuery) {
+            setOriginResults([]);
+            setOriginLoading(false);
+            return;
+        }
+        setOriginLoading(true);
+        fetchAirportData(debouncedOriginQuery).then((data) => {
+            setOriginResults(data);
+            setOriginLoading(false);
+        });
+    }, [debouncedOriginQuery]);
+
+    useEffect(() => {
+        if (!debouncedDestinationQuery) {
+            setDestinationResults([]);
+            setDestinationLoading(false);
+            return;
+        }
+        setDestinationLoading(true);
+        fetchAirportData(debouncedDestinationQuery).then((data) => {
+            setDestinationResults(data);
+            setDestinationLoading(false);
+        });
+    }, [debouncedDestinationQuery]);
 
     const handleSearch = () => {
         router.push({
             pathname: "/results",
             params: {
-                origin,
-                destination,
+                origin:
+                    origin?.presentation?.suggestionTitle ||
+                    origin?.presentation?.title,
+                destination:
+                    destination?.presentation?.suggestionTitle ||
+                    destination?.presentation?.title,
                 departure: formatDate(departure),
                 returnDate: formatDate(returnDate),
                 tripType,
@@ -89,11 +154,15 @@ export default function SearchFlightsScreen() {
                         color="#757575"
                         style={styles.inputIcon}
                     />
-                    <InputField
+                    <DropdownSearch
                         placeholder="From"
                         value={origin}
-                        onChangeText={setOrigin}
-                        style={styles.flexInput}
+                        onSelect={setOrigin}
+                        query={originQuery}
+                        onQueryChange={setOriginQuery}
+                        results={originResults}
+                        style={{ width: "93%" }}
+                        loading={originLoading}
                     />
                 </View>
                 <View style={styles.swapRow}>
@@ -118,11 +187,15 @@ export default function SearchFlightsScreen() {
                         color="#757575"
                         style={styles.inputIcon}
                     />
-                    <InputField
+                    <DropdownSearch
                         placeholder="Where to?"
                         value={destination}
-                        onChangeText={setDestination}
-                        style={styles.flexInput}
+                        onSelect={setDestination}
+                        query={destinationQuery}
+                        onQueryChange={setDestinationQuery}
+                        results={destinationResults}
+                        style={{ width: "93%" }}
+                        loading={destinationLoading}
                     />
                 </View>
                 <View style={styles.dateRow}>
@@ -301,6 +374,8 @@ const styles = StyleSheet.create({
         borderRadius: 8,
         paddingHorizontal: 8,
         paddingVertical: Platform.OS === "ios" ? 10 : 0,
+        borderWidth: 1,
+        borderColor: "#ccc",
     },
     inputIcon: {
         marginRight: 8,

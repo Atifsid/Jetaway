@@ -1,6 +1,11 @@
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import {
+    Ionicons,
+    MaterialCommunityIcons,
+    MaterialIcons,
+} from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { Picker } from "@react-native-picker/picker";
 import axios from "axios";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
@@ -11,6 +16,7 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import DropdownModal from "../../components/ui/DropdownModal";
 import DropdownSearch from "../../components/ui/DropdownSearch";
 import PrimaryButton from "../../components/ui/PrimaryButton";
 
@@ -18,6 +24,40 @@ const TRIP_TYPES = [
     { label: "One way", value: "oneway", icon: "arrow-forward" },
     { label: "Round trip", value: "roundtrip", icon: "compare-arrows" },
 ];
+
+const SEAT_TYPES = [
+    { value: "economy", label: "Economy" },
+    { value: "premium_economy", label: "Premium Economy" },
+    { value: "business", label: "Business" },
+    { value: "first", label: "First" },
+];
+
+// Add PassengerKey type for safe indexing
+const PASSENGER_TYPES = [
+    { key: "adults", label: "Adults", subtitle: undefined, min: 1, max: 9 },
+    {
+        key: "children",
+        label: "Children",
+        subtitle: "Aged 2-11",
+        min: 0,
+        max: 9,
+    },
+    {
+        key: "infantsInSeat",
+        label: "Infants",
+        subtitle: "In seat",
+        min: 0,
+        max: 9,
+    },
+    {
+        key: "infantsOnLap",
+        label: "Infants",
+        subtitle: "On lap",
+        min: 0,
+        max: 9,
+    },
+] as const;
+type PassengerKey = (typeof PASSENGER_TYPES)[number]["key"];
 
 function formatDate(date: Date | null) {
     if (!date) return "";
@@ -38,6 +78,21 @@ export default function SearchFlightsScreen() {
     const [destinationQuery, setDestinationQuery] = useState("");
     const [destinationResults, setDestinationResults] = useState<any[]>([]);
     const [destinationLoading, setDestinationLoading] = useState(false);
+    const [seatType, setSeatType] = useState("economy");
+    const [passengerModalVisible, setPassengerModalVisible] = useState(false);
+    const [passengers, setPassengers] = useState<Record<PassengerKey, number>>({
+        adults: 1,
+        children: 0,
+        infantsInSeat: 0,
+        infantsOnLap: 0,
+    });
+    const [localPassengers, setLocalPassengers] =
+        useState<Record<PassengerKey, number>>(passengers);
+    const totalPassengers =
+        passengers.adults +
+        passengers.children +
+        passengers.infantsInSeat +
+        passengers.infantsOnLap;
     const router = useRouter();
 
     const debouncedOriginQuery = useDebouncedValue(originQuery, 500);
@@ -59,8 +114,6 @@ export default function SearchFlightsScreen() {
                         process.env.EXPO_PUBLIC_SKY_SCRAPPER_HOST,
                 },
             });
-            console.log("response.data?.data", JSON.stringify(response.data));
-
             return Array.isArray(response.data?.data) ? response.data.data : [];
         } catch (error) {
             return [];
@@ -106,6 +159,7 @@ export default function SearchFlightsScreen() {
                 departure: formatDate(departure),
                 returnDate: formatDate(returnDate),
                 tripType,
+                seatType,
             },
         });
     };
@@ -274,6 +328,252 @@ export default function SearchFlightsScreen() {
                         />
                     )}
                 </View>
+                <View
+                    style={[
+                        styles.inputRow,
+                        { paddingVertical: 0, marginTop: 10 },
+                    ]}
+                >
+                    <MaterialCommunityIcons
+                        name="seatbelt"
+                        size={24}
+                        color="#757575"
+                        style={styles.inputIcon}
+                    />
+                    <View style={{ flex: 1 }}>
+                        <Picker
+                            selectedValue={seatType}
+                            onValueChange={setSeatType}
+                            style={{ width: "100%" }}
+                        >
+                            {SEAT_TYPES.map((type) => (
+                                <Picker.Item
+                                    key={type.value}
+                                    label={type.label}
+                                    value={type.value}
+                                />
+                            ))}
+                        </Picker>
+                    </View>
+                </View>
+                <TouchableOpacity
+                    style={styles.inputRow}
+                    onPress={() => {
+                        setLocalPassengers(passengers);
+                        setPassengerModalVisible(true);
+                    }}
+                    activeOpacity={0.7}
+                >
+                    <MaterialCommunityIcons
+                        name="account-group"
+                        size={22}
+                        color={"#757575"}
+                        style={[styles.inputIcon, { paddingVertical: 10 }]}
+                    />
+                    <Text
+                        style={{
+                            fontSize: 16,
+                            color: totalPassengers > 1 ? "#222" : "#757575",
+                        }}
+                        numberOfLines={1}
+                    >
+                        {totalPassengers > 1
+                            ? `${totalPassengers} Passengers`
+                            : "1 Passenger"}
+                    </Text>
+                </TouchableOpacity>
+                <DropdownModal
+                    visible={passengerModalVisible}
+                    onClose={() => setPassengerModalVisible(false)}
+                >
+                    {PASSENGER_TYPES.map((type) => (
+                        <View
+                            key={type.key}
+                            style={{
+                                flexDirection: "row",
+                                alignItems: "center",
+                                marginBottom: 16,
+                            }}
+                        >
+                            <View style={{ flex: 1 }}>
+                                <Text
+                                    style={{
+                                        fontSize: 16,
+                                        fontWeight: "500",
+                                        color: "#222",
+                                    }}
+                                >
+                                    {type.label}
+                                </Text>
+                                {type.subtitle && (
+                                    <Text
+                                        style={{
+                                            fontSize: 13,
+                                            color: "#888",
+                                            marginTop: 2,
+                                        }}
+                                    >
+                                        {type.subtitle}
+                                    </Text>
+                                )}
+                            </View>
+                            <View
+                                style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    gap: 8,
+                                }}
+                            >
+                                <TouchableOpacity
+                                    style={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: 8,
+                                        backgroundColor:
+                                            localPassengers[type.key] <=
+                                            type.min
+                                                ? "#f2f2f2"
+                                                : "#f2f6fc",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                    onPress={() =>
+                                        setLocalPassengers((prev) => {
+                                            const next = { ...prev };
+                                            next[type.key] = Math.max(
+                                                type.min,
+                                                prev[type.key] - 1
+                                            );
+                                            if (
+                                                type.key === "adults" &&
+                                                next.adults < 1
+                                            )
+                                                next.adults = 1;
+                                            return next;
+                                        })
+                                    }
+                                    disabled={
+                                        localPassengers[type.key] <= type.min
+                                    }
+                                >
+                                    <Text
+                                        style={{
+                                            fontSize: 20,
+                                            color:
+                                                localPassengers[type.key] <=
+                                                type.min
+                                                    ? "#bbb"
+                                                    : "#1976D2",
+                                            fontWeight: "bold",
+                                        }}
+                                    >
+                                        -
+                                    </Text>
+                                </TouchableOpacity>
+                                <Text
+                                    style={{
+                                        fontSize: 16,
+                                        fontWeight: "bold",
+                                        width: 24,
+                                        textAlign: "center",
+                                    }}
+                                >
+                                    {localPassengers[type.key]}
+                                </Text>
+                                <TouchableOpacity
+                                    style={{
+                                        width: 32,
+                                        height: 32,
+                                        borderRadius: 8,
+                                        backgroundColor:
+                                            localPassengers[type.key] >=
+                                            type.max
+                                                ? "#f2f2f2"
+                                                : "#f2f6fc",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                    onPress={() =>
+                                        setLocalPassengers((prev) => {
+                                            const next = { ...prev };
+                                            next[type.key] = Math.min(
+                                                type.max,
+                                                prev[type.key] + 1
+                                            );
+                                            return next;
+                                        })
+                                    }
+                                    disabled={
+                                        localPassengers[type.key] >= type.max
+                                    }
+                                >
+                                    <Text
+                                        style={{
+                                            fontSize: 20,
+                                            color:
+                                                localPassengers[type.key] >=
+                                                type.max
+                                                    ? "#bbb"
+                                                    : "#1976D2",
+                                            fontWeight: "bold",
+                                        }}
+                                    >
+                                        +
+                                    </Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    ))}
+                    <View
+                        style={{
+                            flexDirection: "row",
+                            justifyContent: "flex-end",
+                            marginTop: 8,
+                            gap: 16,
+                        }}
+                    >
+                        <TouchableOpacity
+                            onPress={() => {
+                                setLocalPassengers(passengers);
+                                setPassengerModalVisible(false);
+                            }}
+                            style={{
+                                paddingHorizontal: 12,
+                                paddingVertical: 8,
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    color: "#1976D2",
+                                    fontWeight: "bold",
+                                    fontSize: 16,
+                                }}
+                            >
+                                Cancel
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => {
+                                setPassengers(localPassengers);
+                                setPassengerModalVisible(false);
+                            }}
+                            style={{
+                                paddingHorizontal: 12,
+                                paddingVertical: 8,
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    color: "#1976D2",
+                                    fontWeight: "bold",
+                                    fontSize: 16,
+                                }}
+                            >
+                                Done
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </DropdownModal>
                 <View style={styles.exploreBtnContainer}>
                     <PrimaryButton
                         title="Explore"

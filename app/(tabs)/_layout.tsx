@@ -31,7 +31,21 @@ export default function TabLayout() {
                     tabBarIcon: ({ color }) => (
                         <IconSymbol
                             size={28}
-                            name="flight-takeoff"
+                            name="airplane-search"
+                            color={color}
+                        />
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name="nearby-airports"
+                options={{
+                    title: "Nearby Airports",
+                    headerShown: true,
+                    tabBarIcon: ({ color }) => (
+                        <IconSymbol
+                            size={28}
+                            name="airplane-marker"
                             color={color}
                         />
                     ),

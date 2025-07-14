@@ -84,9 +84,9 @@ export default function SearchFlightsScreen() {
                 </View>
                 <View style={styles.inputRow}>
                     <Ionicons
-                        name="radio-button-on"
+                        name="radio-button-off"
                         size={20}
-                        color="#1976D2"
+                        color="#757575"
                         style={styles.inputIcon}
                     />
                     <InputField

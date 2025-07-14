@@ -1,35 +1,26 @@
-import {
-    DarkTheme,
-    DefaultTheme,
-    ThemeProvider,
-} from "@react-navigation/native";
-import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
-import "react-native-reanimated";
+import { Slot } from "expo-router";
+import { useState } from "react";
+import { AuthProvider, useAuth } from "../components/AuthContext";
+import LoginScreen from "./login";
+import SignupScreen from "./signup";
 
-import { useColorScheme } from "@/hooks/useColorScheme";
+function AuthGate() {
+    const { user } = useAuth();
+    const [showLogin, setShowLogin] = useState(false);
+
+    if (!user) {
+        if (showLogin) {
+            return <LoginScreen onShowSignup={() => setShowLogin(false)} />;
+        }
+        return <SignupScreen onShowLogin={() => setShowLogin(true)} />;
+    }
+    return <Slot />;
+}
 
 export default function RootLayout() {
-    const colorScheme = useColorScheme();
-    const [loaded] = useFonts({
-        SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-    });
-
-    if (!loaded) {
-        return null;
-    }
-
     return (
-        <ThemeProvider
-            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-        >
-            <Stack>
-                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                <Stack.Screen name="+not-found" />
-                <Stack.Screen name="results" options={{ headerShown: false }} />
-            </Stack>
-            <StatusBar style="auto" />
-        </ThemeProvider>
+        <AuthProvider>
+            <AuthGate />
+        </AuthProvider>
     );
 }

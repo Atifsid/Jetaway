@@ -4,10 +4,10 @@ import { useAuth } from "../components/AuthContext";
 import InputField from "../components/ui/InputField";
 import PrimaryButton from "../components/ui/PrimaryButton";
 
-export default function SignupScreen({
-    onShowLogin,
+export default function LoginScreen({
+    onShowSignup,
 }: {
-    onShowLogin?: () => void;
+    onShowSignup?: () => void;
 }) {
     const { login } = useAuth();
     const [email, setEmail] = useState("");
@@ -15,7 +15,7 @@ export default function SignupScreen({
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Sign Up</Text>
+            <Text style={styles.title}>Log In</Text>
             <InputField
                 placeholder="Email"
                 value={email}
@@ -29,14 +29,14 @@ export default function SignupScreen({
                 secureTextEntry
             />
             <PrimaryButton
-                title="Sign Up"
+                title="Log In"
                 onPress={() => login(email)}
                 disabled={!email || !password}
             />
             <View style={styles.linkRow}>
-                <Text style={styles.linkText}>Already have an account? </Text>
-                <TouchableOpacity onPress={onShowLogin}>
-                    <Text style={styles.link}>Log in</Text>
+                <Text style={styles.linkText}>Don't have an account? </Text>
+                <TouchableOpacity onPress={onShowSignup}>
+                    <Text style={styles.link}>Sign up</Text>
                 </TouchableOpacity>
             </View>
         </View>

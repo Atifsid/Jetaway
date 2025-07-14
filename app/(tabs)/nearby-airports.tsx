@@ -1,39 +1,17 @@
+import axios from "axios";
 import * as Location from "expo-location";
 import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Dimensions,
-    Image,
+    FlatList,
     StyleSheet,
+    Text,
     View,
 } from "react-native";
-import MapView, { Marker } from "react-native-maps";
+import MapView from "react-native-maps";
 import { ThemedText } from "../../components/ThemedText";
 import { ThemedView } from "../../components/ThemedView";
-
-const mockAirports = [
-    {
-        id: "JFK",
-        name: "John F. Kennedy International Airport",
-        code: "JFK",
-        latitude: 40.6413,
-        longitude: -73.7781,
-    },
-    {
-        id: "EWR",
-        name: "Newark Liberty International Airport",
-        code: "EWR",
-        latitude: 40.6895,
-        longitude: -74.1745,
-    },
-    {
-        id: "LGA",
-        name: "LaGuardia Airport",
-        code: "LGA",
-        latitude: 40.7769,
-        longitude: -73.874,
-    },
-];
 
 const INITIAL_REGION = {
     latitude: 40.7128,
@@ -48,24 +26,61 @@ export default function NearbyAirportsScreen() {
     const [permissionGranted, setPermissionGranted] = useState<boolean | null>(
         null
     );
+    const [currentAirport, setCurrentAirport] = useState<any>(null);
+    const [nearbyAirports, setNearbyAirports] = useState<any[]>([]);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         (async () => {
             setLoading(true);
-            let { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== "granted") {
+            let lat = INITIAL_REGION.latitude;
+            let lng = INITIAL_REGION.longitude;
+            try {
+                let { status } =
+                    await Location.requestForegroundPermissionsAsync();
+                if (status === "granted") {
+                    setPermissionGranted(true);
+                    let loc = await Location.getCurrentPositionAsync({});
+                    lat = loc.coords.latitude;
+                    lng = loc.coords.longitude;
+                    setRegion({
+                        latitude: lat,
+                        longitude: lng,
+                        latitudeDelta: 0.1,
+                        longitudeDelta: 0.1,
+                    });
+                } else {
+                    setPermissionGranted(false);
+                }
+            } catch (e) {
                 setPermissionGranted(false);
-                setLoading(false);
-                return;
             }
-            setPermissionGranted(true);
-            let loc = await Location.getCurrentPositionAsync({});
-            setRegion({
-                latitude: loc.coords.latitude,
-                longitude: loc.coords.longitude,
-                latitudeDelta: 0.1,
-                longitudeDelta: 0.1,
-            });
+            // Fetch current and nearby airports from API
+            try {
+                const options = {
+                    method: "GET",
+                    url: `${process.env.EXPO_PUBLIC_SKY_SCRAPPER_BASE_URL}/flights/getNearByAirports`,
+                    params: {
+                        lat: lat.toString(),
+                        lng: lng.toString(),
+                        locale: "en-US",
+                    },
+                    headers: {
+                        "x-rapidapi-key": process.env.EXPO_PUBLIC_RAPID_API_KEY,
+                        "x-rapidapi-host":
+                            process.env.EXPO_PUBLIC_SKY_SCRAPPER_HOST,
+                    },
+                };
+                const response = await axios.request(options);
+                const data = response.data.data;
+                setCurrentAirport(data.current);
+                setNearbyAirports(data.nearby || []);
+                setError(null);
+            } catch (err) {
+                setError("Failed to fetch nearby airports.");
+                setCurrentAirport(null);
+                setNearbyAirports([]);
+            }
             setLoading(false);
         })();
     }, []);
@@ -101,6 +116,12 @@ export default function NearbyAirportsScreen() {
         );
     }
 
+    // Combine current and nearby airports for the list
+    const allAirports = [
+        ...(currentAirport ? [{ ...currentAirport, isCurrent: true }] : []),
+        ...nearbyAirports.map((a) => ({ ...a, isCurrent: false })),
+    ];
+
     return (
         <ThemedView style={styles.container}>
             <MapView
@@ -108,26 +129,31 @@ export default function NearbyAirportsScreen() {
                 initialRegion={INITIAL_REGION}
                 region={region}
                 showsUserLocation={true}
-            >
-                {mockAirports.map((airport) => (
-                    <Marker
-                        key={airport.id}
-                        coordinate={{
-                            latitude: airport.latitude,
-                            longitude: airport.longitude,
-                        }}
-                        title={airport.name}
-                        description={airport.code}
-                    >
-                        <View style={styles.markerContainer}>
-                            <Image
-                                source={require("../../assets/images/airport-marker.png")}
-                                style={styles.markerIcon}
-                            />
-                        </View>
-                    </Marker>
-                ))}
-            </MapView>
+            />
+            <FlatList
+                data={allAirports}
+                keyExtractor={(item) =>
+                    item.navigation?.relevantFlightParams?.skyId ||
+                    item.presentation?.title
+                }
+                renderItem={({ item }) => (
+                    <View style={styles.airportListItem}>
+                        <Text style={styles.airportTitle}>
+                            {item.presentation?.suggestionTitle}
+                            {item.isCurrent ? " (Current)" : ""}
+                        </Text>
+                        <Text style={styles.airportSubtitle}>
+                            {item.presentation?.subtitle}
+                        </Text>
+                    </View>
+                )}
+                ListEmptyComponent={
+                    <Text style={{ textAlign: "center", color: "#888" }}>
+                        No airports found.
+                    </Text>
+                }
+                contentContainerStyle={{ paddingBottom: 24 }}
+            />
         </ThemedView>
     );
 }
@@ -160,5 +186,18 @@ const styles = StyleSheet.create({
         width: 28,
         height: 28,
         resizeMode: "contain",
+    },
+    airportListItem: {
+        padding: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: "#eee",
+    },
+    airportTitle: {
+        fontWeight: "bold",
+        fontSize: 16,
+    },
+    airportSubtitle: {
+        color: "#666",
+        fontSize: 14,
     },
 });

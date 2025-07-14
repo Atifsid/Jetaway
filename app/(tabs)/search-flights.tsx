@@ -94,6 +94,8 @@ export default function SearchFlightsScreen() {
         passengers.infantsInSeat +
         passengers.infantsOnLap;
     const router = useRouter();
+    const [searchLoading, setSearchLoading] = useState(false);
+    const [searchError, setSearchError] = useState<string | null>(null);
 
     const debouncedOriginQuery = useDebouncedValue(originQuery, 500);
     const debouncedDestinationQuery = useDebouncedValue(destinationQuery, 500);
@@ -146,22 +148,84 @@ export default function SearchFlightsScreen() {
         });
     }, [debouncedDestinationQuery]);
 
-    const handleSearch = () => {
-        router.push({
-            pathname: "/results",
-            params: {
-                origin:
-                    origin?.presentation?.suggestionTitle ||
-                    origin?.presentation?.title,
-                destination:
-                    destination?.presentation?.suggestionTitle ||
-                    destination?.presentation?.title,
-                departure: formatDate(departure),
-                returnDate: formatDate(returnDate),
-                tripType,
-                seatType,
-            },
-        });
+    const handleSearch = async () => {
+        setSearchError(null);
+        if (
+            !origin ||
+            !destination ||
+            !departure ||
+            (tripType === "roundtrip" && !returnDate)
+        ) {
+            setSearchError("Please fill all required fields.");
+            return;
+        }
+        setSearchLoading(true);
+        try {
+            const options = {
+                method: "GET",
+                url: `${process.env.EXPO_PUBLIC_SKY_SCRAPPER_BASE_URL}/flights/searchFlights`,
+                params: {
+                    originSkyId: origin.skyId,
+                    destinationSkyId: destination.skyId,
+                    originEntityId: origin.entityId,
+                    destinationEntityId: destination.entityId,
+                    date: formatDate(departure),
+                    ...(tripType === "roundtrip" && returnDate
+                        ? { returnDate: formatDate(returnDate) }
+                        : {}),
+                    cabinClass: seatType,
+                    adults: String(passengers.adults),
+                    childrens: String(passengers.children),
+                    infants: String(
+                        passengers.infantsInSeat + passengers.infantsOnLap
+                    ),
+                    sortBy: "best",
+                    currency: "USD",
+                    market: "en-US",
+                    countryCode: "US",
+                },
+                headers: {
+                    "x-rapidapi-key": process.env.EXPO_PUBLIC_RAPID_API_KEY,
+                    "x-rapidapi-host":
+                        process.env.EXPO_PUBLIC_SKY_SCRAPPER_HOST,
+                },
+            };
+
+            console.log("options: ", JSON.stringify(options));
+            const response = await axios.request(options);
+            const data = response.data?.data;
+            console.log("search results: ", data);
+
+            if (!data || !Array.isArray(data) || data.length === 0) {
+                setSearchError(
+                    "No flights found. Please try different search criteria."
+                );
+                setSearchLoading(false);
+                return;
+            }
+            setSearchLoading(false);
+            router.push({
+                pathname: "/results",
+                params: {
+                    origin:
+                        origin?.presentation?.suggestionTitle ||
+                        origin?.presentation?.title,
+                    destination:
+                        destination?.presentation?.suggestionTitle ||
+                        destination?.presentation?.title,
+                    departure: formatDate(departure),
+                    returnDate: formatDate(returnDate),
+                    tripType,
+                    seatType,
+                    flights: JSON.stringify(data),
+                },
+            });
+        } catch (error) {
+            setSearchError(
+                "An error occurred while searching for flights. Please try again."
+            );
+            setSearchLoading(false);
+        }
     };
 
     return (
@@ -574,11 +638,23 @@ export default function SearchFlightsScreen() {
                         </TouchableOpacity>
                     </View>
                 </DropdownModal>
+                {searchError && (
+                    <Text
+                        style={{
+                            color: "#d32f2f",
+                            textAlign: "center",
+                            marginBottom: 8,
+                        }}
+                    >
+                        {searchError}
+                    </Text>
+                )}
                 <View style={styles.exploreBtnContainer}>
                     <PrimaryButton
-                        title="Explore"
+                        title={searchLoading ? "Searching..." : "Explore"}
                         onPress={handleSearch}
                         disabled={
+                            searchLoading ||
                             !origin ||
                             !destination ||
                             !departure ||

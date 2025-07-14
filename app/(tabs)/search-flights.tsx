@@ -193,8 +193,8 @@ export default function SearchFlightsScreen() {
 
             console.log("options: ", JSON.stringify(options));
             const response = await axios.request(options);
+            console.log("search response: ", response.data);
             const data = response.data?.data;
-            console.log("search results: ", data);
 
             if (!data || !Array.isArray(data) || data.length === 0) {
                 setSearchError(

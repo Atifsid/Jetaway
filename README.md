@@ -6,7 +6,7 @@ An [Expo](https://expo.dev) project created with [`create-expo-app`](https://www
 
 -   Search Flights
 -   Nearby Airports
--   getFlightDetails (Had to remove, API was very unstable)
+-   GetFlightDetails (Had to remove, API was very unstable)
 
 ## Get started
 
@@ -32,6 +32,12 @@ In the output, you'll find options to open the app in a
 -   [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
 You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+
+## Screenshots
+
+<img width="320" height="680" alt="Screenshot_20250715-174304" src="https://github.com/user-attachments/assets/34b03b70-3060-4500-ae87-d4f257dc1d19" />
+<img width="320" height="680" alt="Screenshot_20250715-174327" src="https://github.com/user-attachments/assets/4cc859e8-fdd8-45d1-9be5-0e9edd844821" />
+<img width="320" height="680" alt="Screenshot_20250715-174506" src="https://github.com/user-attachments/assets/ff652fd6-09bf-4b76-b24d-ef8a57265462" />
 
 ## Get a fresh project
 

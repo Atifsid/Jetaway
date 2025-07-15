@@ -291,6 +291,7 @@ export default function SearchFlightsScreen() {
                         results={originResults}
                         style={{ width: "93%" }}
                         loading={originLoading}
+                        modalTitle="Search Origin"
                     />
                 </View>
                 <View style={styles.swapRow}>
@@ -324,6 +325,7 @@ export default function SearchFlightsScreen() {
                         results={destinationResults}
                         style={{ width: "93%" }}
                         loading={destinationLoading}
+                        modalTitle="Search Destination"
                     />
                 </View>
                 <View style={styles.dateRow}>

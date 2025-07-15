@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import {
     ActivityIndicator,
@@ -22,6 +23,7 @@ interface DropdownSearchProps {
     onQueryChange: (query: string) => void;
     results: any[];
     loading?: boolean;
+    modalTitle?: string;
 }
 
 export default function DropdownSearch({
@@ -33,6 +35,7 @@ export default function DropdownSearch({
     onQueryChange,
     results,
     loading = false,
+    modalTitle = "Search",
 }: DropdownSearchProps) {
     const [modalVisible, setModalVisible] = React.useState(false);
 
@@ -96,6 +99,15 @@ export default function DropdownSearch({
             >
                 <View style={styles.modalOverlay}>
                     <View style={styles.modalContent}>
+                        <View style={styles.modalHeader}>
+                            <Text style={styles.modalTitle}>{modalTitle}</Text>
+                            <TouchableOpacity
+                                style={styles.closeBtn}
+                                onPress={() => setModalVisible(false)}
+                            >
+                                <Ionicons name="close" size={22} color="#222" />
+                            </TouchableOpacity>
+                        </View>
                         <TextInput
                             style={styles.searchInput}
                             placeholder="Search..."
@@ -202,16 +214,6 @@ export default function DropdownSearch({
                                 keyboardShouldPersistTaps="handled"
                             />
                         )}
-                        <TouchableOpacity
-                            style={styles.closeBtn}
-                            onPress={() => setModalVisible(false)}
-                        >
-                            <Text
-                                style={{ color: "#007AFF", fontWeight: "bold" }}
-                            >
-                                Close
-                            </Text>
-                        </TouchableOpacity>
                     </View>
                 </View>
             </Modal>
@@ -235,9 +237,11 @@ const styles = StyleSheet.create({
     modalContent: {
         width: "90%",
         maxHeight: "80%",
+        minHeight: 250,
         backgroundColor: "#fff",
         borderRadius: 12,
-        padding: 16,
+        paddingHorizontal: 16,
+        paddingTop: 8,
         ...Platform.select({
             android: { elevation: 4 },
             ios: { shadowColor: "#000", shadowOpacity: 0.1, shadowRadius: 8 },
@@ -250,6 +254,7 @@ const styles = StyleSheet.create({
         padding: 10,
         marginBottom: 12,
         fontSize: 16,
+        marginTop: 20,
     },
     groupHeader: {
         paddingVertical: 8,
@@ -282,7 +287,21 @@ const styles = StyleSheet.create({
         fontSize: 13,
     },
     closeBtn: {
-        marginTop: 16,
-        alignSelf: "center",
+        width: 18,
+        height: 18,
+        alignItems: "center",
+        justifyContent: "center",
+        borderRadius: 16,
+    },
+    modalHeader: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: "bold",
+        color: "#22223b",
+        textAlign: "right",
     },
 });

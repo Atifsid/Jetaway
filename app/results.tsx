@@ -39,7 +39,10 @@ export default function ResultsScreen() {
                     data={flights}
                     keyExtractor={(item) => item.id}
                     renderItem={({ item }) => <FlightCard itinerary={item} />}
-                    contentContainerStyle={{ paddingBottom: 24 }}
+                    contentContainerStyle={{
+                        paddingBottom: 24,
+                        paddingTop: 6,
+                    }}
                 />
             </View>
         </View>

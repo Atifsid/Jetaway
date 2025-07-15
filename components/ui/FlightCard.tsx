@@ -1,59 +1,38 @@
 import { formatDuration, formatTime } from "@/utils";
-import { Image, StyleSheet, Text, View } from "react-native";
-import SegmentRow from "./SegmentRow";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function FlightCard({ itinerary }: { itinerary: any }) {
+    const leg = itinerary.legs[0];
+    const airline = leg.carriers.marketing[0];
     return (
         <View style={styles.card}>
-            <Text style={styles.price}>{itinerary.price.formatted}</Text>
-            {itinerary.legs.map((leg: any, idx: number) => (
-                <View key={leg.id} style={styles.legRow}>
-                    <Image
-                        source={{ uri: leg.carriers.marketing[0].logoUrl }}
-                        style={styles.logo}
-                        resizeMode="contain"
-                    />
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.legRoute}>
-                            {leg.origin.displayCode} {formatTime(leg.departure)}{" "}
-                            → {leg.destination.displayCode}{" "}
-                            {formatTime(leg.arrival)}
-                        </Text>
-                        <Text style={styles.legDetails}>
-                            {leg.origin.name} → {leg.destination.name} •{" "}
-                            {formatDuration(leg.durationInMinutes)} •{" "}
-                            {leg.stopCount === 0
-                                ? "Direct"
-                                : `${leg.stopCount} stop${
-                                      leg.stopCount > 1 ? "s" : ""
-                                  }`}
-                        </Text>
-                        <Text style={styles.legAirline}>
-                            {leg.carriers.marketing[0].name}
-                        </Text>
-                        {Array.isArray(leg.segments) &&
-                            leg.segments.length > 0 && (
-                                <View style={{ marginTop: 6, marginBottom: 2 }}>
-                                    <Text
-                                        style={{
-                                            fontSize: 13,
-                                            color: "#888",
-                                            marginBottom: 2,
-                                        }}
-                                    >
-                                        Segments:
-                                    </Text>
-                                    {leg.segments.map((segment: any) => (
-                                        <SegmentRow
-                                            key={segment.id}
-                                            segment={segment}
-                                        />
-                                    ))}
-                                </View>
-                            )}
-                    </View>
+            <View style={styles.topRow}>
+                <Text style={styles.airlineName}>{airline.name}</Text>
+                <Image
+                    source={{ uri: airline.logoUrl }}
+                    style={styles.logo}
+                    resizeMode="contain"
+                />
+                <Text style={styles.price}>{itinerary.price.formatted}</Text>
+            </View>
+            <View style={styles.middleRow}>
+                <View style={styles.timeBlock}>
+                    <Text style={styles.label}>Depart</Text>
+                    <Text style={styles.time}>{formatTime(leg.departure)}</Text>
                 </View>
-            ))}
+                <View style={styles.durationPill}>
+                    <Text style={styles.durationText}>
+                        {formatDuration(leg.durationInMinutes)}
+                    </Text>
+                </View>
+                <View style={styles.timeBlock}>
+                    <Text style={styles.label}>Arrive</Text>
+                    <Text style={styles.time}>{formatTime(leg.arrival)}</Text>
+                </View>
+            </View>
+            <TouchableOpacity style={styles.detailsBtn} activeOpacity={0.7}>
+                <Text style={styles.detailsText}>View Details</Text>
+            </TouchableOpacity>
         </View>
     );
 }
@@ -62,7 +41,8 @@ const styles = StyleSheet.create({
     card: {
         backgroundColor: "#fff",
         borderRadius: 16,
-        padding: 20,
+        paddingVertical: 18,
+        paddingHorizontal: 20,
         marginBottom: 18,
         marginHorizontal: 8,
         shadowColor: "#000",
@@ -70,38 +50,82 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
         shadowOffset: { width: 0, height: 2 },
         elevation: 2,
+        alignItems: "center",
+    },
+    topRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        width: "100%",
+        marginBottom: 10,
+    },
+    airlineName: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: "#22223b",
+        flex: 1,
+    },
+    logo: {
+        width: 48,
+        height: 32,
+        marginHorizontal: 8,
     },
     price: {
         fontWeight: "bold",
-        fontSize: 20,
-        color: "#007AFF",
-        marginBottom: 8,
+        fontSize: 18,
+        color: "#22223b",
+        flex: 1,
+        textAlign: "right",
     },
-    legRow: {
+    middleRow: {
         flexDirection: "row",
         alignItems: "center",
-        marginBottom: 10,
+        justifyContent: "space-between",
+        width: "100%",
+        marginBottom: 12,
+        marginTop: 2,
     },
-    logo: {
-        width: 36,
-        height: 36,
-        marginRight: 12,
-        borderRadius: 8,
-        backgroundColor: "#f0f0f0",
+    timeBlock: {
+        alignItems: "center",
+        flex: 1,
     },
-    legRoute: {
-        fontSize: 16,
+    label: {
+        fontSize: 12,
+        color: "#888",
+        marginBottom: 2,
+    },
+    time: {
+        fontSize: 18,
         fontWeight: "bold",
         color: "#22223b",
+        letterSpacing: 1,
     },
-    legDetails: {
+    durationPill: {
+        backgroundColor: "#f3f6fa",
+        borderRadius: 16,
+        paddingHorizontal: 14,
+        paddingVertical: 4,
+        alignItems: "center",
+        justifyContent: "center",
+        minWidth: 70,
+        marginHorizontal: 8,
+    },
+    durationText: {
         fontSize: 13,
+        fontWeight: "600",
         color: "#4a4e69",
-        marginBottom: 2,
+        letterSpacing: 1,
     },
-    legAirline: {
-        fontSize: 13,
-        color: "#007AFF",
-        marginBottom: 2,
+    detailsBtn: {
+        marginTop: 6,
+        paddingVertical: 6,
+        paddingHorizontal: 18,
+        borderRadius: 8,
+        backgroundColor: "#f3f6fa",
+    },
+    detailsText: {
+        color: "#22223b",
+        fontWeight: "600",
+        fontSize: 15,
     },
 });

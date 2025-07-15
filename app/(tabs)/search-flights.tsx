@@ -161,9 +161,15 @@ export default function SearchFlightsScreen() {
         }
         setSearchLoading(true);
         try {
+            console.log("Origin", JSON.stringify(origin));
+            console.log("Destination", JSON.stringify(destination));
+
             const options = {
                 method: "GET",
-                url: `${process.env.EXPO_PUBLIC_SKY_SCRAPPER_BASE_URL}/flights/searchFlights`,
+                url: `${process.env.EXPO_PUBLIC_SKY_SCRAPPER_BASE_URL?.replace(
+                    "/v1",
+                    "/v2"
+                )}/flights/searchFlights`,
                 params: {
                     originSkyId: origin.skyId,
                     destinationSkyId: destination.skyId,
@@ -193,10 +199,14 @@ export default function SearchFlightsScreen() {
 
             console.log("options: ", JSON.stringify(options));
             const response = await axios.request(options);
-            console.log("search response: ", response.data);
+            console.log("search response: ", JSON.stringify(response.data));
             const data = response.data?.data;
 
-            if (!data || !Array.isArray(data) || data.length === 0) {
+            if (
+                !data ||
+                !Array.isArray(data.itineraries) ||
+                data.itineraries.length === 0
+            ) {
                 setSearchError(
                     "No flights found. Please try different search criteria."
                 );
@@ -217,7 +227,7 @@ export default function SearchFlightsScreen() {
                     returnDate: formatDate(returnDate),
                     tripType,
                     seatType,
-                    flights: JSON.stringify(data),
+                    flights: JSON.stringify(data.itineraries),
                 },
             });
         } catch (error) {

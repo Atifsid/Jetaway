@@ -38,11 +38,13 @@ export default function ResultsScreen() {
                 <FlatList
                     data={flights}
                     keyExtractor={(item) => item.id}
-                    renderItem={({ item }) => <FlightCard itinerary={item} />}
-                    contentContainerStyle={{
-                        paddingBottom: 24,
-                        paddingTop: 6,
-                    }}
+                    renderItem={({ item }) => (
+                        <FlightCard
+                            itinerary={item}
+                            sessionId={params.sessionId as string}
+                        />
+                    )}
+                    contentContainerStyle={{ paddingBottom: 24, paddingTop: 6 }}
                 />
             </View>
         </View>

@@ -1,39 +1,139 @@
 import { formatDuration, formatTime } from "@/utils";
+import axios from "axios";
+import React, { useState } from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import FlightDetailsModal from "./FlightDetailsModal";
 
-export default function FlightCard({ itinerary }: { itinerary: any }) {
+interface FlightCardProps {
+    itinerary: any;
+    sessionId: string;
+}
+
+export default function FlightCard({ itinerary, sessionId }: FlightCardProps) {
+    const [modalVisible, setModalVisible] = useState(false);
+    const [detailsLoading, setDetailsLoading] = useState(false);
+    const [detailsError, setDetailsError] = useState<string | null>(null);
+    const [details, setDetails] = useState<any>(null);
+
     const leg = itinerary.legs[0];
     const airline = leg.carriers.marketing[0];
+
+    const handleViewDetails = async () => {
+        setModalVisible(true);
+        setDetailsLoading(true);
+        setDetailsError(null);
+        setDetails(null);
+        try {
+            const options = {
+                method: "GET",
+                url: `${process.env.EXPO_PUBLIC_SKY_SCRAPPER_BASE_URL}/flights/getFlightDetails`,
+                params: {
+                    legs: JSON.stringify([
+                        {
+                            origin: leg.origin.id,
+                            destination: leg.destination.id,
+                            date: leg.departure.split("T")[0],
+                        },
+                    ]),
+                    adults: "1",
+                    currency: "USD",
+                    locale: "en-US",
+                    market: "en-US",
+                    cabinClass: "economy",
+                    countryCode: "US",
+                    sessionId: sessionId,
+                    itineraryId: itinerary.id,
+                },
+                headers: {
+                    "x-rapidapi-key": process.env.EXPO_PUBLIC_RAPID_API_KEY,
+                    "x-rapidapi-host":
+                        process.env.EXPO_PUBLIC_SKY_SCRAPPER_HOST,
+                },
+            };
+            console.log("Details: ", options);
+            const response = await axios.request(options);
+            console.log("Details: ", JSON.stringify(response));
+            if (response.data?.status && response.data?.data?.itinerary) {
+                setDetails({
+                    ...response.data.data.itinerary,
+                    destinationImage: response.data.data.destinationImage,
+                    price: itinerary.price, // fallback to card price
+                });
+            } else {
+                setDetailsError(
+                    response.data?.message?.[0]?.sessionId ||
+                        response.data?.message ||
+                        "No details found for this flight."
+                );
+            }
+        } catch (error: any) {
+            if (error.code === "ECONNABORTED") {
+                setDetailsError("Request timed out. Please try again.");
+            } else if (
+                error.response &&
+                error.response.data &&
+                error.response.data.message
+            ) {
+                setDetailsError(error.response.data.message);
+            } else {
+                setDetailsError(
+                    "Failed to fetch flight details. Please try again."
+                );
+            }
+        } finally {
+            setDetailsLoading(false);
+        }
+    };
+
     return (
-        <View style={styles.card}>
-            <View style={styles.topRow}>
-                <Text style={styles.airlineName}>{airline.name}</Text>
-                <Image
-                    source={{ uri: airline.logoUrl }}
-                    style={styles.logo}
-                    resizeMode="contain"
-                />
-                <Text style={styles.price}>{itinerary.price.formatted}</Text>
-            </View>
-            <View style={styles.middleRow}>
-                <View style={styles.timeBlock}>
-                    <Text style={styles.label}>Depart</Text>
-                    <Text style={styles.time}>{formatTime(leg.departure)}</Text>
-                </View>
-                <View style={styles.durationPill}>
-                    <Text style={styles.durationText}>
-                        {formatDuration(leg.durationInMinutes)}
+        <>
+            <View style={styles.card}>
+                <View style={styles.topRow}>
+                    <Text style={styles.airlineName}>{airline.name}</Text>
+                    <Image
+                        source={{ uri: airline.logoUrl }}
+                        style={styles.logo}
+                        resizeMode="contain"
+                    />
+                    <Text style={styles.price}>
+                        {itinerary.price.formatted}
                     </Text>
                 </View>
-                <View style={styles.timeBlock}>
-                    <Text style={styles.label}>Arrive</Text>
-                    <Text style={styles.time}>{formatTime(leg.arrival)}</Text>
+                <View style={styles.middleRow}>
+                    <View style={styles.timeBlock}>
+                        <Text style={styles.label}>Depart</Text>
+                        <Text style={styles.time}>
+                            {formatTime(leg.departure)}
+                        </Text>
+                    </View>
+                    <View style={styles.durationPill}>
+                        <Text style={styles.durationText}>
+                            {formatDuration(leg.durationInMinutes)}
+                        </Text>
+                    </View>
+                    <View style={styles.timeBlock}>
+                        <Text style={styles.label}>Arrive</Text>
+                        <Text style={styles.time}>
+                            {formatTime(leg.arrival)}
+                        </Text>
+                    </View>
                 </View>
+                <TouchableOpacity
+                    style={styles.detailsBtn}
+                    activeOpacity={0.7}
+                    onPress={handleViewDetails}
+                >
+                    <Text style={styles.detailsText}>View Details</Text>
+                </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.detailsBtn} activeOpacity={0.7}>
-                <Text style={styles.detailsText}>View Details</Text>
-            </TouchableOpacity>
-        </View>
+            <FlightDetailsModal
+                visible={modalVisible}
+                onClose={() => setModalVisible(false)}
+                loading={detailsLoading}
+                error={detailsError}
+                details={details}
+            />
+        </>
     );
 }
 
@@ -95,7 +195,7 @@ const styles = StyleSheet.create({
         marginBottom: 2,
     },
     time: {
-        fontSize: 18,
+        fontSize: 20,
         fontWeight: "bold",
         color: "#22223b",
         letterSpacing: 1,

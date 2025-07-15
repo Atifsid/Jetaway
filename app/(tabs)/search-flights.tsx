@@ -228,6 +228,7 @@ export default function SearchFlightsScreen() {
                     tripType,
                     seatType,
                     flights: JSON.stringify(data.itineraries),
+                    sessionId: data.context.sessionId,
                 },
             });
         } catch (error) {

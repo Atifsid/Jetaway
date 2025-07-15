@@ -125,6 +125,7 @@ export default function DropdownSearch({
                             <FlatList
                                 data={grouped}
                                 keyExtractor={(item) => item.cityId}
+                                contentContainerStyle={{ paddingBottom: 10 }}
                                 renderItem={({ item }) => (
                                     <View>
                                         <TouchableOpacity

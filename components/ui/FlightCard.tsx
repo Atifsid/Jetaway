@@ -1,5 +1,5 @@
 import { formatDuration, formatTime } from "@/utils";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 export default function FlightCard({ itinerary }: { itinerary: any }) {
     const leg = itinerary.legs[0];
@@ -30,9 +30,9 @@ export default function FlightCard({ itinerary }: { itinerary: any }) {
                     <Text style={styles.time}>{formatTime(leg.arrival)}</Text>
                 </View>
             </View>
-            <TouchableOpacity style={styles.detailsBtn} activeOpacity={0.7}>
+            {/* <TouchableOpacity style={styles.detailsBtn} activeOpacity={0.7}>
                 <Text style={styles.detailsText}>View Details</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
         </View>
     );
 }

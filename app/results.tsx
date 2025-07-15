@@ -2,6 +2,16 @@ import FlightCard from "@/components/ui/FlightCard";
 import { useLocalSearchParams } from "expo-router";
 import { FlatList, StyleSheet, Text, View } from "react-native";
 
+function formatDate(dateStr: string | undefined) {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+    });
+}
+
 export default function ResultsScreen() {
     const params = useLocalSearchParams();
     let flights: any[] = [];
@@ -28,13 +38,40 @@ export default function ResultsScreen() {
         }
     }
 
+    const departure = params.departure as string | undefined;
+    const returnDate = params.returnDate as string | undefined;
+
+    let dateText = "";
+    if (departure && returnDate) {
+        dateText = `Departure: ${formatDate(
+            departure
+        )}  |  Return: ${formatDate(returnDate)}`;
+    } else if (departure) {
+        dateText = `Departure: ${formatDate(departure)}`;
+    }
+
     return (
         <View style={styles.outerContainer}>
             <View style={styles.container}>
                 <Text style={styles.title}>Flight Results</Text>
                 <Text style={styles.subtitle}>
-                    {params.origin} → {params.destination} on {params.date}
+                    {params.origin} → {params.destination}
                 </Text>
+                {dateText && (
+                    <Text
+                        style={[
+                            styles.subtitle,
+                            {
+                                marginTop: -8,
+                                marginBottom: 16,
+                                fontSize: 15,
+                                color: "#888",
+                            },
+                        ]}
+                    >
+                        {dateText}
+                    </Text>
+                )}
                 <FlatList
                     data={flights}
                     keyExtractor={(item) => item.id}
